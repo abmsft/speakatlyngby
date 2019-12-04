@@ -1,1 +1,1 @@
-# clistore
+Azure Training Day @ Microsoft Lyngby
