@@ -1,0 +1,70 @@
+	Set Subscription
+		az account set --subscription "<subid>"  
+	
+	az acr create --name <acrname> --resource-group brk1-tailwinddemo --sku Standard
+	
+	Login to ACR
+		docker login --username <acrname> --password-stdin <pwdstore.txt <acrname>.azurecr.io
+		
+		~/pwdstore.txt |  az docker login --username <acrname> --password  <acrname>.azurecr.io
+	
+	BUILD FrontEnd service image
+		az acr build --image <acrname>.azurecr.io/frontend:latest --registry <acrname> --file Dockerfile . 
+	BUILD product service image
+		az acr build --image <acrname>.azurecr.io/products-service:latest --registry <acrname> --file Dockerfile .
+	BUILD inventory service image
+		az acr build --image <acrname>.azurecr.io/inventory-service:latest --registry <acrname> --file Dockerfile .
+	
+	List images:
+		az acr repository list --name <acrname>
+	
+	Push images
+		docker push <acrname>.azurecr.io/frontend:latest
+		docker push <acrname>.azurecr.io/products-service:latest
+		docker push <acrname>.azurecr.io/inventory-service:latest
+	
+	
+	Create a new ASP - Linux 
+		az appservice plan create -n asptailwindcph -g brk1-tailwindmigration --is-linux -l "westeurope" --sku B3 --number-of-workers 1
+	
+	Create a new FRONT end web app for containers
+		az webapp create -g brk1-tailwindmigration -p asptailwindcph -n tailwindcphapp -i <acrname>.azurecr.io/frontend:latest
+	
+	Create a new PRODUCT app for containers
+		az webapp create -g brk1-tailwindmigration -p asptailwindcph -n tailwindcph-product -i <acrname>.azurecr.io/products-service:latest
+	
+	Create a new INVENTORY web app for containers
+		az webapp create -g brk1-tailwindmigration -p asptailwindcph -n tailwindcph-inventory -i <acrname>.azurecr.io/inventory-service:latest
+	
+	Configure connection string: INVENTORY SERVICE
+		az webapp config connection-string set --connection-string-type SQLAzure --resource-group brk1-tailwindmigration  --name tailwindcph-inventory --settings InventoryContext='Server=tailwind-migrate-cph.database.windows.net;Database=tailwind-sqldb-migrate;Uid=sqladmin;Pwd=4m4zin5@zure;'
+	
+	Configure connection string: Product SERVICE
+		az webapp config appsettings set --resource-group brk1-tailwindmigration  --name tailwindcph-product --settings DB_CONNECTION_STRING='mongodb://nosql-tailwindmigrate:<secretkeyfrommongoconnectionstring>==@nosql-tailwindmigrate.documents.azure.com:10255/?ssl=true&replicaSet=globaldb'
+		
+		az webapp config appsettings set --resource-group brk1-tailwindmigration  --name tailwindcph-product --settings SEED_DATA='TRUE'
+	
+	Configure connection string: FrontEnd
+		az webapp config appsettings set --resource-group brk1-tailwindmigration  --name tailwindcphapp --settings INVENTORY_SERVICE_BASE_URL='https://tailwindcph-inventory.azurewebsites.net'
+		
+		az webapp config appsettings set --resource-group brk1-tailwindmigration  --name tailwindcphapp --settings PRODUCT_SERVICE_BASE_URL='https://tailwindcph-product.azurewebsites.net'
+	
+	az cosmosdb create \
+	    --resource-group onprem-tailwind \
+	    --name twonpremcosmosdb \
+	    --kind MongoDB \
+	    --locations regionName=westeurope failoverPriority=0 isZoneRedundant=False \
+	    --default-consistency-level "ConsistentPrefix" \
+	    --enable-multiple-write-locations true
+	
+	mongorestore \
+	    --host twmigratecosmosdb.documents.azure.com:10255 \
+	    -u twmigratecosmosdb \
+	    -p 3YBgwakQ5Hw8t7J5F4s69APon4QdJVpd2R662L6CmuWqi7CbI6V6gCwVLwWmCatPpZh5bXsejjjoE7Yjw45l6g== \
+	    --ssl \
+	    --sslAllowInvalidCertificates \
+	    inventory.bson \
+	    --numInsertionWorkersPerCollection 4 \
+	    --batchSize 24 \
+	    --db tailwind \
+    --collection inventory
