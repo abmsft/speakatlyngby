@@ -37,7 +37,7 @@
 		az webapp create -g brk1-tailwindmigration -p asptailwindcph -n tailwindcph-inventory -i <acrname>.azurecr.io/inventory-service:latest
 	
 	Configure connection string: INVENTORY SERVICE
-		az webapp config connection-string set --connection-string-type SQLAzure --resource-group brk1-tailwindmigration  --name tailwindcph-inventory --settings InventoryContext='Server=tailwind-migrate-cph.database.windows.net;Database=tailwind-sqldb-migrate;Uid=sqladmin;Pwd=4m4zin5@zure;'
+		az webapp config connection-string set --connection-string-type SQLAzure --resource-group brk1-tailwindmigration  --name tailwindcph-inventory --settings InventoryContext='Server=tailwind-migrate-cph.database.windows.net;Database=tailwind-sqldb-migrate;Uid=sqladmin;Pwd=1234;'
 	
 	Configure connection string: Product SERVICE
 		az webapp config appsettings set --resource-group brk1-tailwindmigration  --name tailwindcph-product --settings DB_CONNECTION_STRING='mongodb://nosql-tailwindmigrate:<secretkeyfrommongoconnectionstring>==@nosql-tailwindmigrate.documents.azure.com:10255/?ssl=true&replicaSet=globaldb'
@@ -60,7 +60,7 @@
 	mongorestore \
 	    --host twmigratecosmosdb.documents.azure.com:10255 \
 	    -u twmigratecosmosdb \
-	    -p 3YBgwakQ5Hw8t7J5F4s69APon4QdJVpd2R662L6CmuWqi7CbI6V6gCwVLwWmCatPpZh5bXsejjjoE7Yjw45l6g== \
+	    -p <mongokeyhere> \
 	    --ssl \
 	    --sslAllowInvalidCertificates \
 	    inventory.bson \
